@@ -123,6 +123,7 @@ public abstract class NwaWriter<LETTER, STATE> extends GeneralAutomatonPrinter {
 				printAutomatonSuffix();
 			}
 		}
+		printPairMatchings();
 		finish();
 	}
 
@@ -145,6 +146,18 @@ public abstract class NwaWriter<LETTER, STATE> extends GeneralAutomatonPrinter {
 	 * @return new states
 	 */
 	protected abstract Map<STATE, String> getStateMapping(final Collection<STATE> states);
+	
+	// Wei-Cheng
+	private void printPairMatchings() {
+		println("InternalAlphabet:");
+		mInternalAlphabet.forEach((k,v)->println("  " + v + ": " + k));
+		println("CallAlphabet:");
+		mCallAlphabet.forEach((k,v)->println("  " + v + ": " + k));
+		println("ReturnAlphabet:");
+		mReturnAlphabet.forEach((k,v)->println("  " + v + ": " + k));
+		println("StateMapping:");
+		mStateMapping.forEach((k,v)->println("  " + v + ": " + k));
+	}
 
 	private void printAlphabets() {
 		printCollectionPrefix("callAlphabet");

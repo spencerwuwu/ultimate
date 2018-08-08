@@ -521,6 +521,7 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 			try {
 				switch (cd) {
 				case REFINE_BOTH: {
+					mLogger.info("--REFINE_BOTH--");
 					final BinaryStatePredicateManager bspm = lassoCheck.getBinaryStatePredicateManager();
 					if (bspm.isLoopWithoutStemTerminating()) {
 						mRankWithoutSi++;
@@ -546,12 +547,14 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 				}
 					break;
 				case REFINE_FINITE:
+					mLogger.info("--REFINE_FINITE--");
 					refineFinite(lassoCheck);
 					mInfeasible++;
 					reduceAbstractionSize(mAutomataMinimizationAfterFeasbilityBasedRefinement);
 					break;
 
 				case REFINE_BUCHI:
+					mLogger.info("--REFINE_BUCHI--");
 					final BinaryStatePredicateManager bspm = lassoCheck.getBinaryStatePredicateManager();
 					if (bspm.isLoopWithoutStemTerminating()) {
 						mRankWithoutSi++;
@@ -571,6 +574,7 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 					reduceAbstractionSize(mAutomataMinimizationAfterRankBasedRefinement);
 					break;
 				case REPORT_UNKNOWN:
+					mLogger.info("--REFINE_UNKNOWN--");
 					mMDBenchmark.reportRemainderModule(mAbstraction.size(), false);
 					if (mConstructTermcompProof) {
 						mTermcompProofBenchmark.reportRemainderModule(false);
@@ -581,6 +585,7 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 					}
 					return Result.UNKNOWN;
 				case REPORT_NONTERMINATION:
+					mLogger.info("--REFINE_NONTERMINATION--");
 					if (!lassoWasOverapproximated().isEmpty()) {
 						mMDBenchmark.reportRemainderModule(mAbstraction.size(), false);
 						if (mConstructTermcompProof) {
@@ -990,6 +995,17 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 			throw e;
 		}
 		determinized.switchToReadonlyMode();
+		// Wei-Cheng
+		if (true) {
+			final String filename =
+					mIteration + "_FINITE_interpolAutomatonUsedInRefinement";
+			writeAutomatonToFile(mServices, mInterpolAutomaton, "/home/spencerwu/Documents/iis/18/ultimate-workspace/output/dot_generate", filename, mPref.getAutomataFormat(),
+					"");
+			final String filename2 = mIteration + "_" + "FINITE_interpolAutomatonUsedInRefinement_after";
+			writeAutomatonToFile(mServices, determinized, "/home/spencerwu/Documents/iis/18/ultimate-workspace/output/dot_generate", filename2, mPref.getAutomataFormat(),
+					"");
+		}
+		
 		if (mPref.dumpAutomata()) {
 			final String filename =
 					mIcfg.getIdentifier() + "_" + "interpolAutomatonUsedInRefinement" + mIteration + "after";

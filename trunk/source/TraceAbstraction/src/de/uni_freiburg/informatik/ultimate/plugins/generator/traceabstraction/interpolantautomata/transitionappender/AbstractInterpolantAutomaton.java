@@ -298,7 +298,8 @@ public abstract class AbstractInterpolantAutomaton<LETTER>
 
 	@Override
 	public final String toString() {
-		if (mMode == Mode.READ_ONLY) {
+		// if (mMode == Mode.READ_ONLY) {
+		if (true) {
 			return new AutomatonDefinitionPrinter<String, String>(new AutomataLibraryServices(mServices), "nwa",
 					Format.ATS, this).getDefinitionAsString();
 		}

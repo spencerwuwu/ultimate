@@ -239,6 +239,16 @@ public class RefineBuchi<LETTER extends IIcfgTransition<?>> {
 						stem, loop, pu, stemInterpolants, loopInterpolants, mInterpolAutomaton, bhtc);
 		final IStateDeterminizer<LETTER, IPredicate> stateDeterminizer = new PowersetDeterminizer<>(
 				mInterpolAutomatonUsedInRefinement, mUseDoubleDeckers, mStateFactoryInterpolAutom);
+		
+		// Wei-Cheng 
+		if (true) {
+			final String filename = iteration + "_BUCHI_" + "InterpolantAutomatonBuchi";
+			final String message = setting.toString();
+			BuchiCegarLoop.writeAutomatonToFile(mServices, mInterpolAutomaton, "/home/spencerwu/Documents/iis/18/ultimate-workspace/output/dot_generate", filename, mFormat, message);
+			final String filename2 = iteration + "_BUCHI_" + "InterpolantAutomatonBuchi_" + "after";
+			BuchiCegarLoop.writeAutomatonToFile(mServices, mInterpolAutomatonUsedInRefinement, "/home/spencerwu/Documents/iis/18/ultimate-workspace/output/dot_generate", filename2,
+					mFormat, message);
+		}
 		INestedWordAutomaton<LETTER, IPredicate> newAbstraction;
 		if (mDifference) {
 			if (complementationConstruction == BuchiComplementationConstruction.Ncsb) {
