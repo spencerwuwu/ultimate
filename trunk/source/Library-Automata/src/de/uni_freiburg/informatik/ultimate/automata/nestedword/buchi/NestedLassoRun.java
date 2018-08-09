@@ -27,6 +27,8 @@
 package de.uni_freiburg.informatik.ultimate.automata.nestedword.buchi;
 
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.NestedRun;
+import de.uni_freiburg.informatik.ultimate.automata.nestedword.NestedWord;
+import de.uni_freiburg.informatik.ultimate.core.model.services.ILogger;
 
 /**
  * Infinite run of a Büchi nested word automaton for a nested word of the form <tt>u.v^ω</tt>.
@@ -52,6 +54,16 @@ public class NestedLassoRun<LETTER, STATE> {
 	public NestedLassoRun(final NestedRun<LETTER, STATE> stem, final NestedRun<LETTER, STATE> loop) {
 		mStem = stem;
 		mLoop = loop;
+	}
+	
+	// For mCounterexample comparison
+	public Boolean equal(NestedLassoRun<LETTER, STATE> compare, ILogger mLogger) {
+		String operand = compare.toString();
+		String self = toString();
+		self = self.replaceAll("[0-9]+#", "#");
+		operand = operand.replaceAll("[0-9]+#", "#");
+		if (self.equals(operand)) return true;
+		else return false;
 	}
 
 	public NestedRun<LETTER, STATE> getStem() {

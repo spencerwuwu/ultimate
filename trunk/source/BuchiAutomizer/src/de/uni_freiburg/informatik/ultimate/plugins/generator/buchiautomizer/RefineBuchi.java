@@ -164,6 +164,100 @@ public class RefineBuchi<LETTER extends IIcfgTransition<?>> {
 	}
 
 	private int mIteration;
+	
+	INestedWordAutomaton<LETTER, IPredicate> refineBuchiNew(
+			final INwaOutgoingLetterAndTransitionProvider<LETTER, IPredicate> abstraction,
+			final NestedLassoRun<LETTER, IPredicate> mCounterexample, final int iteration,
+			final BuchiInterpolantAutomatonConstructionStyle setting, final BinaryStatePredicateManager bspm,
+			final ModifiableGlobalsTable modifiableGlobalsTable, final InterpolationTechnique interpolation,
+			final BuchiCegarLoopBenchmarkGenerator benchmarkGenerator,
+			final BuchiComplementationConstruction complementationConstruction) throws AutomataLibraryException {
+		mIteration = iteration;
+		final NestedWord<LETTER> stem = mCounterexample.getStem().getWord();
+		final NestedWord<LETTER> loop = mCounterexample.getLoop().getWord();
+
+		assert !bspm.getStemPrecondition().getFormula().toString().equals("false");
+		assert !bspm.getHondaPredicate().getFormula().toString().equals("false");
+		assert !bspm.getRankEqAndSi().getFormula().toString().equals("false");
+		final PredicateUnifier pu = new PredicateUnifier(mServices, mCsToolkit.getManagedScript(), mPredicateFactory,
+				mCsToolkit.getSymbolTable(), mSimplificationTechnique, mXnfConversionTechnique,
+				bspm.getStemPrecondition(), bspm.getHondaPredicate(), bspm.getRankEqAndSi(),
+				bspm.getStemPostcondition(), bspm.getRankDecreaseAndBound(), bspm.getSiConjunction());
+		IPredicate[] stemInterpolants;
+		InterpolatingTraceCheck<LETTER> traceCheck;
+		if (BuchiCegarLoop.isEmptyStem(mCounterexample)) {
+			stemInterpolants = null;
+		} else {
+			traceCheck = constructTraceCheck(bspm.getStemPrecondition(), bspm.getStemPostcondition(), stem, mCsToolkit,
+					pu, mInterpolation);
+			final LBool stemCheck = traceCheck.isCorrect();
+			if (stemCheck == LBool.UNSAT) {
+				stemInterpolants = traceCheck.getInterpolants();
+			} else {
+				throw new AssertionError("incorrect predicates - stem");
+			}
+		}
+
+		traceCheck = constructTraceCheck(bspm.getRankEqAndSi(), bspm.getHondaPredicate(), loop, mCsToolkit, pu,
+				mInterpolation);
+		final LBool loopCheck = traceCheck.isCorrect();
+		IPredicate[] loopInterpolants;
+		if (loopCheck == LBool.UNSAT) {
+			loopInterpolants = traceCheck.getInterpolants();
+		} else {
+			throw new AssertionError("incorrect predicates - loop");
+		}
+		mBci = TraceCheckUtils.computeCoverageCapability(mServices, traceCheck, mLogger);
+
+		NestedWordAutomaton<LETTER, IPredicate> mInterpolAutomaton =
+				constructBuchiInterpolantAutomaton(bspm.getStemPrecondition(), stem, stemInterpolants,
+						bspm.getHondaPredicate(), loop, loopInterpolants, abstraction);
+
+		final IHoareTripleChecker ehtc = TraceAbstractionUtils.constructEfficientHoareTripleCheckerWithCaching(
+				mServices, HoareTripleChecks.INCREMENTAL, mCsToolkit, pu);
+		final BuchiHoareTripleChecker bhtc = new BuchiHoareTripleChecker(ehtc);
+		bhtc.putDecreaseEqualPair(bspm.getHondaPredicate(), bspm.getRankEqAndSi());
+		assert new InductivityCheck<>(mServices, mInterpolAutomaton, false, true, bhtc).getResult();
+		assert new BuchiAccepts<>(new AutomataLibraryServices(mServices), mInterpolAutomaton,
+				mCounterexample.getNestedLassoWord()).getResult();
+
+		mInterpolAutomatonUsedInRefinement =
+				buildBuchiInterpolantAutomatonForOnDemandConstruction(mCounterexample, setting, bspm, interpolation,
+						stem, loop, pu, stemInterpolants, loopInterpolants, mInterpolAutomaton, bhtc);
+		final IStateDeterminizer<LETTER, IPredicate> stateDeterminizer = new PowersetDeterminizer<>(
+				mInterpolAutomatonUsedInRefinement, mUseDoubleDeckers, mStateFactoryInterpolAutom);
+
+		// Wei-Cheng trace
+		if (true) {
+			mLogger.info("DUMP FLAG");
+			final String filename = iteration + "_BUCHI_" + "InterpolantAutomatonBuchi";
+			final String message = setting.toString();
+			BuchiCegarLoop.writeAutomatonToFile(mServices, mInterpolAutomaton, "/home/spencerwu/Documents/iis/18/ultimate-workspace/output/dot_generate", filename, mFormat, message);
+
+			final String determinicity;
+			final boolean isDeterministic =
+					new IsDeterministic<>(new AutomataLibraryServices(mServices), mInterpolAutomatonUsedInRefinement)
+							.getResult();
+			if (isDeterministic) {
+				determinicity = "deterministic";
+			} else {
+				determinicity = "nondeterministic";
+			}
+			final String filename2 = iteration + "_BUCHI_" + "InterpolantAutomatonBuchi_" + "after_" + determinicity;
+			BuchiCegarLoop.writeAutomatonToFile(mServices, mInterpolAutomatonUsedInRefinement, "/home/spencerwu/Documents/iis/18/ultimate-workspace/output/dot_generate", filename2,
+					mFormat, message);
+		}
+		INestedWordAutomaton<LETTER, IPredicate> newAbstraction;
+		// mDifference is always true and isAlwatsSemiDeterministic
+		final FkvOptimization optimization = FkvOptimization.ELASTIC;
+		newAbstraction = rankBasedOptimization(abstraction, setting, benchmarkGenerator, stateDeterminizer,
+				optimization);
+
+		mInterpolAutomaton = null;
+		benchmarkGenerator.addEdgeCheckerData(bhtc.getEdgeCheckerBenchmark());
+
+		return newAbstraction;
+	}
 
 	INestedWordAutomaton<LETTER, IPredicate> refineBuchi(
 			final INwaOutgoingLetterAndTransitionProvider<LETTER, IPredicate> abstraction,
@@ -225,7 +319,6 @@ public class RefineBuchi<LETTER extends IIcfgTransition<?>> {
 			BuchiCegarLoop.writeAutomatonToFile(mServices, mInterpolAutomaton, mDumpPath, filename, mFormat, message);
 		}
 
-		// BuchiHoareTripleChecker bhtc = new BuchiHoareTripleChecker(new MonolithicHoareTripleChecker(mCsToolkit));
 		final IHoareTripleChecker ehtc = TraceAbstractionUtils.constructEfficientHoareTripleCheckerWithCaching(
 				mServices, HoareTripleChecks.INCREMENTAL, mCsToolkit, pu);
 		final BuchiHoareTripleChecker bhtc = new BuchiHoareTripleChecker(ehtc);

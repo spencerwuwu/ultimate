@@ -1,3 +1,6 @@
+/output/*
+/trunk/runtime-Debug-E4.product
+
 /releaseScripts/default/DeltaDebugger-linux/*
 /releaseScripts/default/DeltaDebugger-win32/*
 /releaseScripts/default/UAutomizer-linux/*

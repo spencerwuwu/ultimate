@@ -158,9 +158,10 @@ public class BuchiAutomizerObserver implements IUnmanagedObserver {
 			reportResult(termcompProof);
 		}
 
-		final BuchiAutomizerTimingBenchmark timingBenchmark = new BuchiAutomizerTimingBenchmark(benchGen);
-		final IResult benchTiming = new StatisticsResult<>(Activator.PLUGIN_ID, "Timing statistics", timingBenchmark);
-		reportResult(benchTiming);
+		// Comment out temporarily by Wei-Cheng
+		//final BuchiAutomizerTimingBenchmark timingBenchmark = new BuchiAutomizerTimingBenchmark(benchGen);
+		//final IResult benchTiming = new StatisticsResult<>(Activator.PLUGIN_ID, "Timing statistics", timingBenchmark);
+		//reportResult(benchTiming);
 
 		interpretAndReportResult(bcl, result, icfg);
 		return icfg;

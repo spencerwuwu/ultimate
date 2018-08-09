@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +53,7 @@ import de.uni_freiburg.informatik.ultimate.automata.nestedword.NestedRun;
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.NestedWord;
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.NestedWordAutomaton;
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.NestedWordAutomatonFilteredStates;
+import de.uni_freiburg.informatik.ultimate.automata.nestedword.buchi.BuchiAccepts;
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.buchi.BuchiClosureNwa;
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.buchi.BuchiIsEmpty;
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.buchi.GeneralizedBuchiIsEmpty;
@@ -83,6 +85,7 @@ import de.uni_freiburg.informatik.ultimate.lassoranker.termination.SupportingInv
 import de.uni_freiburg.informatik.ultimate.lassoranker.termination.TerminationArgument;
 import de.uni_freiburg.informatik.ultimate.lassoranker.termination.rankingfunctions.RankingFunction;
 import de.uni_freiburg.informatik.ultimate.logic.Term;
+import de.uni_freiburg.informatik.ultimate.logic.Script.LBool;
 import de.uni_freiburg.informatik.ultimate.modelcheckerutils.cfg.CfgSmtToolkit;
 import de.uni_freiburg.informatik.ultimate.modelcheckerutils.cfg.structure.IIcfg;
 import de.uni_freiburg.informatik.ultimate.modelcheckerutils.cfg.structure.IIcfgElement;
@@ -115,6 +118,7 @@ import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.au
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.automataminimization.AutomataMinimization.AutomataMinimizationTimeout;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.interpolantautomata.builders.InterpolantAutomatonBuilderFactory;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.interpolantautomata.transitionappender.DeterministicInterpolantAutomaton;
+import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.interpolantautomata.transitionappender.NondeterministicInterpolantAutomaton;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.predicates.InductivityCheck;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.predicates.PredicateFactory;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.preferences.InterpolationPreferenceChecker;
@@ -124,6 +128,9 @@ import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.pr
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.preferences.TraceAbstractionPreferenceInitializer.HoareTripleChecks;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.preferences.TraceAbstractionPreferenceInitializer.InterpolationTechnique;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.preferences.TraceAbstractionPreferenceInitializer.Minimization;
+import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.singletracecheck.InterpolatingTraceCheck;
+import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.singletracecheck.PredicateUnifier;
+import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.singletracecheck.TraceCheckUtils;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.tracehandling.RefinementStrategyFactory;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.tracehandling.TaCheckAndRefinementPreferences;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.tracehandling.TraceAbstractionRefinementEngine;
@@ -197,6 +204,7 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 	 * Accepting run of the abstraction obtained in this iteration.
 	 */
 	protected NestedLassoRun<LETTER, IPredicate> mCounterexample;
+	public Map<NestedLassoRun<LETTER, IPredicate>, Integer> mCounterexampleHistory = new HashMap<NestedLassoRun<LETTER, IPredicate>, Integer>();
 
 	/**
 	 * Abstraction of this iteration. The language of mAbstraction is a set of traces which is
@@ -753,64 +761,124 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 		 * CEGAR loop).
 		 *
 		 */
-		for (final BuchiInterpolantAutomatonConstructionStyle constructionStyle : mBiaConstructionStyleSequence) {
-			assert automatonUsesISLPredicates(mAbstraction) : "used wrong StateFactory";
-			INestedWordAutomaton<LETTER, IPredicate> newAbstraction = null;
-			try {
-				newAbstraction = mRefineBuchi.refineBuchi(mAbstraction, mCounterexample, mIteration, constructionStyle,
-						lassoCheck.getBinaryStatePredicateManager(), mCsToolkitWithRankVars.getModifiableGlobalsTable(),
-						mInterpolation, mBenchmarkGenerator, mComplementationConstruction);
-			} catch (final AutomataOperationCanceledException e) {
-				mBenchmarkGenerator.stop(CegarLoopStatisticsDefinitions.AutomataDifference.toString());
-				final RunningTaskInfo rti = new RunningTaskInfo(getClass(), "applying stage " + stage);
-				throw new ToolchainCanceledException(e, rti);
-			} catch (final ToolchainCanceledException e) {
-				mBenchmarkGenerator.stop(CegarLoopStatisticsDefinitions.AutomataDifference.toString());
-				throw e;
-			} catch (final AutomataLibraryException e) {
-				throw new AssertionError(e.getMessage());
+		boolean existFlag = false;
+		boolean experiment = true;
+		int iterIndex = 0;
+		for (NestedLassoRun<LETTER, IPredicate> exampleKey: mCounterexampleHistory.keySet()) {
+			if (exampleKey.equal(mCounterexample, mLogger)) {
+				existFlag = true;
+				iterIndex = mCounterexampleHistory.get(exampleKey);
 			}
-
-			if (BenchmarkRecord.canDump()) {
-				dumpAutomatonInformation(mRefineBuchi.getInterpolAutomatonUsedInRefinement(), false);
-			}
-			// UtilFixedCounterexample<LETTER, IPredicate> utilFixedCe = new UtilFixedCounterexample<>();
-			// final String counterName = mIcfg.getIdentifier() + "_" + mName + "Abstraction";
-			// try {
-			// System.err.println("At iteration number " + mIteration);
-			// utilFixedCe.checkAcceptance(new AutomataLibraryServices(mServices),
-			// mRefineBuchi.getInterpolAutomatonUsedInRefinement(), counterName, 5);
-			// utilFixedCe.checkAcceptance(new AutomataLibraryServices(mServices), mAbstraction, counterName, 5);
-			// } catch (AutomataLibraryException e1) {
-			// // TODO Auto-generated catch block
-			// e1.printStackTrace();
-			// }
-			if (newAbstraction != null) {
-				if (mConstructTermcompProof) {
-					mTermcompProofBenchmark.reportBuchiModule(mIteration,
-							mRefineBuchi.getInterpolAutomatonUsedInRefinement());
-				}
-				mBenchmarkGenerator.announceSuccessfullRefinementStage(stage);
-				switch (constructionStyle.getInterpolantAutomaton()) {
-				case Deterministic:
-				case LassoAutomaton:
-					mMDBenchmark.reportDeterminsticModule(mIteration,
-							mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
-					break;
-				case ScroogeNondeterminism:
-				case EagerNondeterminism:
-					mMDBenchmark.reportNonDeterminsticModule(mIteration,
-							mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
-					break;
-				default:
-					throw new AssertionError("unsupported");
-				}
-				mBenchmarkGenerator.stop(CegarLoopStatisticsDefinitions.AutomataDifference.toString());
-				mBenchmarkGenerator.addBackwardCoveringInformationBuchi(mRefineBuchi.getBci());
-				return newAbstraction;
-			}
-			stage++;
 		}
+		if (!existFlag) {
+			mLogger.info("mCounterexampleHistory added");
+			mCounterexampleHistory.put(mCounterexample, mIteration);
+			mLogger.info("COUNTEREXAMPLE:\n" + mCounterexample.toString());
+		}
+		
+		if (experiment) {
+			loop:for (final BuchiInterpolantAutomatonConstructionStyle constructionStyle : mBiaConstructionStyleSequence) {
+				switch (constructionStyle.getInterpolantAutomaton()) {
+				case LassoAutomaton:
+					continue loop;
+				case EagerNondeterminism:
+					continue loop;
+				case ScroogeNondeterminism:
+					// If mCounterexample had been used once, conduct full removal from the whole graph 
+					if (!existFlag) {
+						continue;
+					} else {
+						mLogger.info("Constructing Nondeterministic");
+						break;
+					}
+				case Deterministic:
+					// If mCounterexample is the first time being used. remove the determine interpolant anyway
+					if (existFlag) {
+						continue;
+					} else {
+						mLogger.info("Constructing Deterministic");
+						break;
+					}
+				default:
+					throw new UnsupportedOperationException("unknown automaton");
+				}
+				assert automatonUsesISLPredicates(mAbstraction) : "used wrong StateFactory";
+				INestedWordAutomaton<LETTER, IPredicate> newAbstraction = null;
+				try {
+					newAbstraction = mRefineBuchi.refineBuchiNew(mAbstraction, mCounterexample, mIteration, constructionStyle,
+							lassoCheck.getBinaryStatePredicateManager(), mCsToolkitWithRankVars.getModifiableGlobalsTable(),
+							mInterpolation, mBenchmarkGenerator, mComplementationConstruction);
+				} catch (final AutomataOperationCanceledException e) {
+					mBenchmarkGenerator.stop(CegarLoopStatisticsDefinitions.AutomataDifference.toString());
+					final RunningTaskInfo rti = new RunningTaskInfo(getClass(), "applying stage " + stage);
+					throw new ToolchainCanceledException(e, rti);
+				} catch (final ToolchainCanceledException e) {
+					mBenchmarkGenerator.stop(CegarLoopStatisticsDefinitions.AutomataDifference.toString());
+					throw e;
+				} catch (final AutomataLibraryException e) {
+					throw new AssertionError(e.getMessage());
+				}
+
+				if (BenchmarkRecord.canDump()) {
+					dumpAutomatonInformation(mRefineBuchi.getInterpolAutomatonUsedInRefinement(), false);
+				}
+
+				if (newAbstraction != null) {
+					return newAbstraction;
+				}
+				stage++;
+			}
+		} else {
+			for (final BuchiInterpolantAutomatonConstructionStyle constructionStyle : mBiaConstructionStyleSequence) {
+				assert automatonUsesISLPredicates(mAbstraction) : "used wrong StateFactory";
+				INestedWordAutomaton<LETTER, IPredicate> newAbstraction = null;
+				try {
+					newAbstraction = mRefineBuchi.refineBuchi(mAbstraction, mCounterexample, mIteration, constructionStyle,
+							lassoCheck.getBinaryStatePredicateManager(), mCsToolkitWithRankVars.getModifiableGlobalsTable(),
+							mInterpolation, mBenchmarkGenerator, mComplementationConstruction);
+				} catch (final AutomataOperationCanceledException e) {
+					mBenchmarkGenerator.stop(CegarLoopStatisticsDefinitions.AutomataDifference.toString());
+					final RunningTaskInfo rti = new RunningTaskInfo(getClass(), "applying stage " + stage);
+					throw new ToolchainCanceledException(e, rti);
+				} catch (final ToolchainCanceledException e) {
+					mBenchmarkGenerator.stop(CegarLoopStatisticsDefinitions.AutomataDifference.toString());
+					throw e;
+				} catch (final AutomataLibraryException e) {
+					throw new AssertionError(e.getMessage());
+				}
+
+				if (BenchmarkRecord.canDump()) {
+					dumpAutomatonInformation(mRefineBuchi.getInterpolAutomatonUsedInRefinement(), false);
+				}
+
+				if (newAbstraction != null) {
+					if (mConstructTermcompProof) {
+						mTermcompProofBenchmark.reportBuchiModule(mIteration,
+								mRefineBuchi.getInterpolAutomatonUsedInRefinement());
+					}
+					mBenchmarkGenerator.announceSuccessfullRefinementStage(stage);
+					switch (constructionStyle.getInterpolantAutomaton()) {
+					case Deterministic:
+					case LassoAutomaton:
+						mMDBenchmark.reportDeterminsticModule(mIteration,
+								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
+						break;
+					case ScroogeNondeterminism:
+					case EagerNondeterminism:
+						mMDBenchmark.reportNonDeterminsticModule(mIteration,
+								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
+						break;
+					default:
+						throw new AssertionError("unsupported");
+					}
+					mBenchmarkGenerator.stop(CegarLoopStatisticsDefinitions.AutomataDifference.toString());
+					mBenchmarkGenerator.addBackwardCoveringInformationBuchi(mRefineBuchi.getBci());
+					return newAbstraction;
+				}
+				stage++;
+			}
+		}
+			
 		throw new AssertionError("no settings was sufficient");
 	}
 
