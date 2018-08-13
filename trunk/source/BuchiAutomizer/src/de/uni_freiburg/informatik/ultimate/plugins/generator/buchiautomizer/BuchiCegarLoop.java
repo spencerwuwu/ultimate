@@ -28,6 +28,7 @@
 package de.uni_freiburg.informatik.ultimate.plugins.generator.buchiautomizer;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -105,6 +106,7 @@ import de.uni_freiburg.informatik.ultimate.plugins.generator.buchiautomizer.Lass
 import de.uni_freiburg.informatik.ultimate.plugins.generator.buchiautomizer.LassoCheck.TraceCheckResult;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.buchiautomizer.preferences.BuchiAutomizerPreferenceInitializer;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.buchiautomizer.preferences.BuchiAutomizerPreferenceInitializer.BuchiComplementationConstruction;
+import de.uni_freiburg.informatik.ultimate.plugins.generator.buchiautomizer.preferences.BuchiAutomizerPreferenceInitializer.BuchiInterpolantAutomaton;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.buchiautomizer.preferences.BuchiAutomizerPreferenceInitializer.NcsbImplementation;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.CFG2NestedWordAutomaton;
 import de.uni_freiburg.informatik.ultimate.plugins.generator.traceabstraction.CegarAbsIntRunner;
@@ -777,13 +779,14 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 		}
 		
 		if (experiment) {
-			loop:for (final BuchiInterpolantAutomatonConstructionStyle constructionStyle : mBiaConstructionStyleSequence) {
+			List<BuchiInterpolantAutomatonConstructionStyle> myStyle = new LinkedList<BuchiInterpolantAutomatonConstructionStyle>();
+			myStyle.add(new BuchiInterpolantAutomatonConstructionStyle(BuchiInterpolantAutomaton.Deterministic,
+							true, false, false, false, false)); //DBA
+			myStyle.add(new BuchiInterpolantAutomatonConstructionStyle(BuchiInterpolantAutomaton.EagerNondeterminism,
+							true, false, false, false, false)); //NBA
+			loop:for (final BuchiInterpolantAutomatonConstructionStyle constructionStyle : myStyle) {
 				switch (constructionStyle.getInterpolantAutomaton()) {
-				case LassoAutomaton:
-					continue loop;
 				case EagerNondeterminism:
-					continue loop;
-				case ScroogeNondeterminism:
 					// If mCounterexample had been used once, conduct full removal from the whole graph 
 					if (!existFlag) {
 						continue;
