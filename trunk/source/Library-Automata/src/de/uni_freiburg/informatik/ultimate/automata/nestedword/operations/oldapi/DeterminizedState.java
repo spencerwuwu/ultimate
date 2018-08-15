@@ -146,6 +146,26 @@ public class DeterminizedState<LETTER, STATE> implements IDeterminizedState<LETT
 	}
 
 	/**
+	 * Removes the pair (caller,present) to the nested word automaton.
+	 * 
+	 * @param caller
+	 *            caller state
+	 * @param present
+	 *            present state
+	 * @param nwa
+	 *            nested word automaton
+	 */
+	public void removePair(final STATE caller, final STATE present) {
+		if (mConstructionFinished) {
+			throw new IllegalArgumentException("Construction finished must not remove pairs.");
+		}
+		Set<STATE> presentStates = mCaller2presents.get(caller);
+		if (presentStates != null) {
+			presentStates.remove(present);
+		}
+	}
+
+	/**
 	 * Two DeterminizedStates are equivalent iff they represent the same set of state pairs.
 	 */
 	@Override

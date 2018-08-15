@@ -764,21 +764,21 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 		 *
 		 */
 		boolean existFlag = false;
-		boolean experiment = true;
-		int iterIndex = 0;
-		for (NestedLassoRun<LETTER, IPredicate> exampleKey: mCounterexampleHistory.keySet()) {
-			if (exampleKey.equal(mCounterexample, mLogger)) {
-				existFlag = true;
-				iterIndex = mCounterexampleHistory.get(exampleKey);
-			}
-		}
-		if (!existFlag) {
-			mLogger.info("mCounterexampleHistory added");
-			mCounterexampleHistory.put(mCounterexample, mIteration);
-			mLogger.info("COUNTEREXAMPLE:\n" + mCounterexample.toString());
-		}
+		boolean experiment = false;
 		
 		if (experiment) {
+			int iterIndex = 0;
+			for (NestedLassoRun<LETTER, IPredicate> exampleKey: mCounterexampleHistory.keySet()) {
+				if (exampleKey.equal(mCounterexample, mLogger)) {
+					existFlag = true;
+					iterIndex = mCounterexampleHistory.get(exampleKey);
+				}
+			}
+			if (!existFlag) {
+				mLogger.info("mCounterexampleHistory added");
+				mCounterexampleHistory.put(mCounterexample, mIteration);
+				mLogger.info("COUNTEREXAMPLE:\n" + mCounterexample.toString());
+			}
 			List<BuchiInterpolantAutomatonConstructionStyle> myStyle = new LinkedList<BuchiInterpolantAutomatonConstructionStyle>();
 			myStyle.add(new BuchiInterpolantAutomatonConstructionStyle(BuchiInterpolantAutomaton.Deterministic,
 							true, false, false, false, false)); //DBA

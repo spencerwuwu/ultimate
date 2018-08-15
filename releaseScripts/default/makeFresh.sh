@@ -11,7 +11,8 @@ function exitOnFail {
 }
 
 pushd ../../trunk/source/BA_MavenParentUltimate/ > /dev/null
-exitOnFail mvn clean install -Pmaterialize
+export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=128m"
+exitOnFail mvn clean install -Pmaterialize -e
 popd > /dev/null
 
 for platform in {linux,win32}; do

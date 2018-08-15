@@ -26,14 +26,17 @@
  */
 package de.uni_freiburg.informatik.ultimate.automata.nestedword.operations;
 
+import java.lang.Thread.State;
 import java.util.Set;
 
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.INwaOutgoingLetterAndTransitionProvider;
+import de.uni_freiburg.informatik.ultimate.automata.nestedword.NestedWordAutomaton;
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.operations.oldapi.DeterminizedState;
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.transitions.OutgoingCallTransition;
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.transitions.OutgoingInternalTransition;
 import de.uni_freiburg.informatik.ultimate.automata.nestedword.transitions.OutgoingReturnTransition;
 import de.uni_freiburg.informatik.ultimate.automata.statefactory.IDeterminizeStateFactory;
+import de.uni_freiburg.informatik.ultimate.modelcheckerutils.smt.predicates.IPredicate;
 
 /**
  * Construct deterministic states like in the classical powerset construction. For determinization of NWAs there is also
@@ -51,6 +54,8 @@ public class PowersetDeterminizer<LETTER, STATE> implements IStateDeterminizer<L
 	private final INwaOutgoingLetterAndTransitionProvider<LETTER, STATE> mOperand;
 	private final boolean mUseDoubleDeckers;
 	private int mMaxDegreeOfNondeterminism;
+	private boolean mBeta;
+	private State mFinalState;
 
 	/**
 	 * Constructor.
@@ -67,6 +72,14 @@ public class PowersetDeterminizer<LETTER, STATE> implements IStateDeterminizer<L
 		mOperand = operand;
 		mUseDoubleDeckers = useDoubleDeckers;
 		mStateFactory = stateFactory;
+		mBeta = false;
+	}
+	public PowersetDeterminizer(final INwaOutgoingLetterAndTransitionProvider<LETTER, STATE> operand, final boolean useDoubleDeckers,
+			final IDeterminizeStateFactory<STATE> stateFactory, boolean flag) {
+		mOperand = operand;
+		mUseDoubleDeckers = useDoubleDeckers;
+		mStateFactory = stateFactory;
+		mBeta = flag;
 	}
 
 	@Override
@@ -83,17 +96,45 @@ public class PowersetDeterminizer<LETTER, STATE> implements IStateDeterminizer<L
 	public DeterminizedState<LETTER, STATE> internalSuccessor(final DeterminizedState<LETTER, STATE> detState,
 			final LETTER symbol) {
 
-		final DeterminizedState<LETTER, STATE> succDetState = new DeterminizedState<>(mOperand);
-		for (final STATE downState : detState.getDownStates()) {
-			for (final STATE upState : detState.getUpStates(downState)) {
-				for (final OutgoingInternalTransition<LETTER, STATE> upSucc : mOperand.internalSuccessors(upState,
-						symbol)) {
-					succDetState.addPair(downState, upSucc.getSucc(), mOperand);
+		if (!mBeta) {
+			final DeterminizedState<LETTER, STATE> succDetState = new DeterminizedState<>(mOperand);
+			for (final STATE downState : detState.getDownStates()) {
+				for (final STATE upState : detState.getUpStates(downState)) {
+					for (final OutgoingInternalTransition<LETTER, STATE> upSucc : mOperand.internalSuccessors(upState,
+							symbol)) {
+						succDetState.addPair(downState, upSucc.getSucc(), mOperand);
+					}
 				}
 			}
+			updateMaxDegreeOfNondeterminism(succDetState.degreeOfNondeterminism());
+			return succDetState;
+		} else {
+			final DeterminizedState<LETTER, STATE> succDetState = new DeterminizedState<>(mOperand);
+			for (final STATE downState : detState.getDownStates()) {
+				for (final STATE upState : detState.getUpStates(downState)) {
+					for (final OutgoingInternalTransition<LETTER, STATE> upSucc : mOperand.internalSuccessors(upState,
+							symbol)) {
+						succDetState.addPair(downState, upSucc.getSucc(), mOperand);
+						System.out.println( 
+								downState.toString().replaceAll("__U_MULTI_f_home_spencerwu_Documents_iis____ultimate_workspace_output_termination_c__test_fun_", "") + " : " 
+								+ upSucc.getSucc().toString().replaceAll("__U_MULTI_f_home_spencerwu_Documents_iis____ultimate_workspace_output_termination_c__test_fun_", ""));
+						if (succDetState.degreeOfNondeterminism() > 1) {
+							boolean flag = false;
+							for (OutgoingInternalTransition<LETTER, STATE> pair: mOperand.internalSuccessors(downState)) {
+								if (pair.getSucc() != downState && !mOperand.isFinal(pair.getSucc())) flag = true;
+							}
+							if (!flag) {
+								//succDetState.removePair(downState, upSucc.getSucc());
+								System.out.println("\tState removed");
+							}
+						}
+						System.out.println(succDetState.degreeOfNondeterminism());
+					}
+				}
+			}
+			updateMaxDegreeOfNondeterminism(succDetState.degreeOfNondeterminism());
+			return succDetState;
 		}
-		updateMaxDegreeOfNondeterminism(succDetState.degreeOfNondeterminism());
-		return succDetState;
 	}
 
 	@Override

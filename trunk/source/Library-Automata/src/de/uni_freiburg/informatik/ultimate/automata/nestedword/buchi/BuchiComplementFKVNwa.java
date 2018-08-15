@@ -275,7 +275,7 @@ public class BuchiComplementFKVNwa<LETTER, STATE> implements INwaSuccessorStateP
 				throw new ToolchainCanceledException(this.getClass());
 			}
 			// TODO Christian 2016-08-19: Writes "bigX" to logger on <tt>WARN</tt> level in a loop, i.e., spams a lot.
-			mLogger.warn("big" + result.size());
+			//mLogger.warn("big" + result.size());
 		}
 		for (final LevelRankingState<LETTER, STATE> complSucc : result) {
 			final STATE resSucc = getOrAdd(complSucc);

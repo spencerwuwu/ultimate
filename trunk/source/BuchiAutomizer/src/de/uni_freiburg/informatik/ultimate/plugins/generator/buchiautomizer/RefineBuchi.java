@@ -224,8 +224,20 @@ public class RefineBuchi<LETTER extends IIcfgTransition<?>> {
 		mInterpolAutomatonUsedInRefinement =
 				buildBuchiInterpolantAutomatonForOnDemandConstruction(mCounterexample, setting, bspm, interpolation,
 						stem, loop, pu, stemInterpolants, loopInterpolants, mInterpolAutomaton, bhtc);
-		final IStateDeterminizer<LETTER, IPredicate> stateDeterminizer = new PowersetDeterminizer<>(
-				mInterpolAutomatonUsedInRefinement, mUseDoubleDeckers, mStateFactoryInterpolAutom);
+		final IStateDeterminizer<LETTER, IPredicate> stateDeterminizer;
+		switch(setting.getInterpolantAutomaton()) {
+		case EagerNondeterminism:
+			stateDeterminizer = new PowersetDeterminizer<>(
+					mInterpolAutomatonUsedInRefinement, mUseDoubleDeckers, mStateFactoryInterpolAutom, true);
+			break;
+		case Deterministic:
+			stateDeterminizer = new PowersetDeterminizer<>(
+					mInterpolAutomatonUsedInRefinement, mUseDoubleDeckers, mStateFactoryInterpolAutom);
+			break;
+		default:
+			stateDeterminizer = new PowersetDeterminizer<>(
+					mInterpolAutomatonUsedInRefinement, mUseDoubleDeckers, mStateFactoryInterpolAutom);
+		}
 
 		// Wei-Cheng trace
 		if (true) {
