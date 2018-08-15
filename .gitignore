@@ -1,5 +1,6 @@
 /output/*
 /trunk/runtime-Debug-E4.product
+/script/result.log
 
 /releaseScripts/default/DeltaDebugger-linux/*
 /releaseScripts/default/DeltaDebugger-win32/*
