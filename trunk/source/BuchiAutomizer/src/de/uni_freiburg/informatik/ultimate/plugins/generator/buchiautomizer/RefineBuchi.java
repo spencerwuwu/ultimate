@@ -240,7 +240,7 @@ public class RefineBuchi<LETTER extends IIcfgTransition<?>> {
 		}
 
 		// Wei-Cheng trace
-		if (true) {
+		if (false) {
 			mLogger.info("DUMP FLAG");
 			final String filename = iteration + "_BUCHI_" + "InterpolantAutomatonBuchi";
 			final String message = setting.toString();
@@ -346,7 +346,7 @@ public class RefineBuchi<LETTER extends IIcfgTransition<?>> {
 				mInterpolAutomatonUsedInRefinement, mUseDoubleDeckers, mStateFactoryInterpolAutom);
 		
 		// Wei-Cheng 
-		if (true) {
+		if (false) {
 			final String filename = iteration + "_BUCHI_" + "InterpolantAutomatonBuchi";
 			final String message = setting.toString();
 			BuchiCegarLoop.writeAutomatonToFile(mServices, mInterpolAutomaton, "/home/spencerwu/Documents/iis/18/ultimate-workspace/output/dot_generate", filename, mFormat, message);

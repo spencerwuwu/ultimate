@@ -764,7 +764,7 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 		 *
 		 */
 		boolean existFlag = false;
-		boolean experiment = false;
+		boolean experiment = true;
 		
 		if (experiment) {
 			int iterIndex = 0;
