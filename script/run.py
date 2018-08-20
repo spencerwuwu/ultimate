@@ -28,7 +28,7 @@ def wait_timeout(proc, seconds, filename):
             return result
         if time.time() >= end:
             proc.kill()
-            do_log("Process timed out")
+            do_log("Process timed out\n")
             return result
         process_time += interval
         time.sleep(interval)

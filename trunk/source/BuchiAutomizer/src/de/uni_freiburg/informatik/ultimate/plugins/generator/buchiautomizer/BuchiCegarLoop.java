@@ -792,6 +792,7 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 						continue;
 					} else {
 						mLogger.info("Constructing Nondeterministic");
+						System.out.println("AUTO N");
 						break;
 					}
 				case Deterministic:
@@ -800,6 +801,7 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 						continue;
 					} else {
 						mLogger.info("Constructing Deterministic");
+						System.out.println("AUTO D");
 						break;
 					}
 				default:
@@ -1067,7 +1069,7 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 		}
 		determinized.switchToReadonlyMode();
 		// Wei-Cheng
-		if (true) {
+		if (false) {
 			final String filename =
 					mIteration + "_FINITE_interpolAutomatonUsedInRefinement";
 			writeAutomatonToFile(mServices, mInterpolAutomaton, "/home/spencerwu/Documents/iis/18/ultimate-workspace/output/dot_generate", filename, mPref.getAutomataFormat(),
