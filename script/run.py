@@ -12,6 +12,26 @@ def do_log(line):
     print line
     log.write(line + "\n")
 
+def parse_output(result):
+    auto_l = 0
+    auto_d = 0
+    auto_s = 0
+    auto_n = 0
+    for line in result.splitlines():
+        if "AUTO" in line:
+            if "L" in line:
+                auto_l += 1
+            if "D" in line:
+                auto_d += 1
+            if "S" in line:
+                auto_s += 1
+            if "N" in line:
+                auto_n += 1
+        elif "RESULT" in line:
+            do_log("+ " + "Automata: " + str(auto_l) + " " + str(auto_d) + " " + str(auto_s) + " " + str(auto_n))
+            do_log("+ " + line + "\n")
+        else:
+            do_log("+ " + "Error\n")
 
 def wait_timeout(proc, seconds, filename):
     """Wait for a process to finish, or raise exception after timeout"""
@@ -24,7 +44,7 @@ def wait_timeout(proc, seconds, filename):
         result = proc.poll()
         if result is not None:
             do_log("+ time: " + str(process_time))
-            do_log("+ " + proc.communicate()[0])
+            parse_output(proc.communicate()[0])
             return result
         if time.time() >= end:
             proc.kill()
@@ -40,7 +60,7 @@ def analysis_file(filename):
     result = wait_timeout(run, Max_time, filename)
 
 def main():
-    file_list = open(Ultimate_path + "/script/term_list64.txt");
+    file_list = open(Ultimate_path + "/script/term_list.txt");
 
     for line in file_list.readlines():
         analysis_file(Ultimate_path + line.split("\n")[0])
