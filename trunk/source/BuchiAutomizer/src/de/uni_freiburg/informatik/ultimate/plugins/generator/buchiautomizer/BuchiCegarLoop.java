@@ -780,6 +780,8 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 				mLogger.info("COUNTEREXAMPLE:\n" + mCounterexample.toString());
 			}
 			List<BuchiInterpolantAutomatonConstructionStyle> myStyle = new LinkedList<BuchiInterpolantAutomatonConstructionStyle>();
+			myStyle.add(new BuchiInterpolantAutomatonConstructionStyle(BuchiInterpolantAutomaton.LassoAutomaton,
+							true, false, false, false, false)); //Lasso
 			myStyle.add(new BuchiInterpolantAutomatonConstructionStyle(BuchiInterpolantAutomaton.Deterministic,
 							true, false, false, false, false)); //DBA
 			myStyle.add(new BuchiInterpolantAutomatonConstructionStyle(BuchiInterpolantAutomaton.EagerNondeterminism,
@@ -792,7 +794,14 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 						continue;
 					} else {
 						mLogger.info("Constructing Nondeterministic");
-						System.out.println("AUTO N");
+						break;
+					}
+				case LassoAutomaton:
+					// If mCounterexample is the first time being used. remove the determine check if Lasso is enough already
+					if (existFlag) {
+						continue;
+					} else {
+						mLogger.info("Constructing Lasso");
 						break;
 					}
 				case Deterministic:
@@ -801,7 +810,6 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 						continue;
 					} else {
 						mLogger.info("Constructing Deterministic");
-						System.out.println("AUTO D");
 						break;
 					}
 				default:
@@ -829,6 +837,34 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 				}
 
 				if (newAbstraction != null) {
+					switch (constructionStyle.getInterpolantAutomaton()) {
+					case Deterministic:
+						mMDBenchmark.reportDeterminsticModule(mIteration,
+								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
+						System.out.println("AUTO D");
+						mLogger.info("AUTO D");
+						break;
+					case LassoAutomaton:
+						mMDBenchmark.reportDeterminsticModule(mIteration,
+								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
+						System.out.println("AUTO L");
+						mLogger.info("AUTO L");
+						break;
+					case ScroogeNondeterminism:
+						mMDBenchmark.reportNonDeterminsticModule(mIteration,
+								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
+						System.out.println("AUTO S");
+						mLogger.info("AUTO S");
+						break;
+					case EagerNondeterminism:
+						mMDBenchmark.reportNonDeterminsticModule(mIteration,
+								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
+						System.out.println("AUTO N");
+						mLogger.info("AUTO N");
+						break;
+					default:
+						throw new AssertionError("unsupported");
+					}
 					return newAbstraction;
 				}
 				stage++;
@@ -864,14 +900,24 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 					mBenchmarkGenerator.announceSuccessfullRefinementStage(stage);
 					switch (constructionStyle.getInterpolantAutomaton()) {
 					case Deterministic:
+						mMDBenchmark.reportDeterminsticModule(mIteration,
+								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
+						System.out.println("AUTO D");
+						break;
 					case LassoAutomaton:
 						mMDBenchmark.reportDeterminsticModule(mIteration,
 								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
+						System.out.println("AUTO L");
 						break;
 					case ScroogeNondeterminism:
+						mMDBenchmark.reportNonDeterminsticModule(mIteration,
+								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
+						System.out.println("AUTO S");
+						break;
 					case EagerNondeterminism:
 						mMDBenchmark.reportNonDeterminsticModule(mIteration,
 								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
+						System.out.println("AUTO N");
 						break;
 					default:
 						throw new AssertionError("unsupported");
