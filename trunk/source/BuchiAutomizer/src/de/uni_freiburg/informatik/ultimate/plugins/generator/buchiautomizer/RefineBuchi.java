@@ -232,10 +232,6 @@ public class RefineBuchi<LETTER extends IIcfgTransition<?>> {
 					mInterpolAutomatonUsedInRefinement, mUseDoubleDeckers, mStateFactoryInterpolAutom, true);
 			break;
 		case LassoAutomaton:
-			final boolean isUseful = isUsefulInterpolantAutomaton(mInterpolAutomatonUsedInRefinement, mCounterexample);
-			if (!isUseful) {
-				return null;
-			}
 		case Deterministic:
 			stateDeterminizer = new PowersetDeterminizer<>(
 					mInterpolAutomatonUsedInRefinement, mUseDoubleDeckers, mStateFactoryInterpolAutom);
@@ -270,9 +266,19 @@ public class RefineBuchi<LETTER extends IIcfgTransition<?>> {
 		final FkvOptimization optimization = FkvOptimization.ELASTIC;
 		newAbstraction = rankBasedOptimization(abstraction, setting, benchmarkGenerator, stateDeterminizer,
 				optimization);
+		benchmarkGenerator.addEdgeCheckerData(bhtc.getEdgeCheckerBenchmark());
 
 		mInterpolAutomaton = null;
-		benchmarkGenerator.addEdgeCheckerData(bhtc.getEdgeCheckerBenchmark());
+		final boolean isUseful = isUsefulInterpolantAutomaton(mInterpolAutomatonUsedInRefinement, mCounterexample);
+		if (!isUseful) {
+			switch(setting.getInterpolantAutomaton()) {
+			case LassoAutomaton:
+				return null;
+			case EagerNondeterminism:
+			case Deterministic:
+			default:
+			}
+		}
 
 		return newAbstraction;
 	}

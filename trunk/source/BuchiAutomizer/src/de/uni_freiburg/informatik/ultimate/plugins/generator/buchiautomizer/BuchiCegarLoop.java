@@ -813,7 +813,8 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 						break;
 					}
 				default:
-					throw new UnsupportedOperationException("unknown automaton");
+					continue;
+					//throw new UnsupportedOperationException("unknown automaton");
 				}
 				assert automatonUsesISLPredicates(mAbstraction) : "used wrong StateFactory";
 				INestedWordAutomaton<LETTER, IPredicate> newAbstraction = null;
@@ -841,25 +842,21 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 					case Deterministic:
 						mMDBenchmark.reportDeterminsticModule(mIteration,
 								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
-						System.out.println("AUTO D");
 						mLogger.info("AUTO D");
 						break;
 					case LassoAutomaton:
 						mMDBenchmark.reportDeterminsticModule(mIteration,
 								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
-						System.out.println("AUTO L");
 						mLogger.info("AUTO L");
 						break;
 					case ScroogeNondeterminism:
 						mMDBenchmark.reportNonDeterminsticModule(mIteration,
 								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
-						System.out.println("AUTO S");
 						mLogger.info("AUTO S");
 						break;
 					case EagerNondeterminism:
 						mMDBenchmark.reportNonDeterminsticModule(mIteration,
 								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
-						System.out.println("AUTO N");
 						mLogger.info("AUTO N");
 						break;
 					default:
@@ -902,22 +899,22 @@ public class BuchiCegarLoop<LETTER extends IIcfgTransition<?>> {
 					case Deterministic:
 						mMDBenchmark.reportDeterminsticModule(mIteration,
 								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
-						System.out.println("AUTO D");
+						mLogger.info("AUTO D");
 						break;
 					case LassoAutomaton:
 						mMDBenchmark.reportDeterminsticModule(mIteration,
 								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
-						System.out.println("AUTO L");
+						mLogger.info("AUTO L");
 						break;
 					case ScroogeNondeterminism:
 						mMDBenchmark.reportNonDeterminsticModule(mIteration,
 								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
-						System.out.println("AUTO S");
+						mLogger.info("AUTO S");
 						break;
 					case EagerNondeterminism:
 						mMDBenchmark.reportNonDeterminsticModule(mIteration,
 								mRefineBuchi.getInterpolAutomatonUsedInRefinement().size());
-						System.out.println("AUTO N");
+						mLogger.info("AUTO N");
 						break;
 					default:
 						throw new AssertionError("unsupported");
